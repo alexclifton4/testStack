@@ -75,7 +75,7 @@ services:
       - docker-volume-backup.exec-pre-backup=redis-cli save
     logging: *logging
 
-shopping:
+  shopping:
     container_name: shopping
     image: '020353163849.dkr.ecr.eu-west-2.amazonaws.com/shopping:latest'
     restart: always
