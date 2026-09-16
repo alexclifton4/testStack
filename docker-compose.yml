@@ -1,0 +1,89 @@
+version: '3'
+
+x-logging-template: &logging
+    driver: syslog
+    options:
+      syslog-address: "udp://localhost:5514"
+      tag: "{{.Name}}"
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    command:
+      - "--log.level=DEBUG"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.redirect.address=:80"
+      - "--entryPoints.redirect.http.redirections.entryPoint.to=web"
+      - "--entryPoints.redirect.http.redirections.entryPoint.scheme=https"
+      - "--entryPoints.web.address=:443"
+      - "--certificatesresolvers.resolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.resolver.acme.email=letsencrypt@alexclifton.co.uk"
+      - "--certificatesresolvers.resolver.acme.storage=/certs/acme.json"
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certs:/certs
+    networks:
+      AppsNetwork:
+        mac_address: 02:42:ac:11:00:01
+    environment:
+      - TZ=Europe/London
+    logging: *logging
+
+  postgres:
+    image: 'postgres:16'
+    container_name: "postgres"
+    restart: always
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - postgres-backup:/backup
+    networks:
+      AppsNetwork:
+        mac_address: 02:42:ac:11:00:02
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Europe/London
+      PGTZ: Europe/London
+    labels:
+      - docker-volume-backup.exec-pre-backup=bash -c 'pg_dumpall -U postgres > /backup/dump.sql'
+      - docker-volume-backup.exec-post-backup=rm /backup/dump.sql
+    logging: *logging
+
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: "redis"
+    restart: always
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis:/data
+    networks:
+      AppsNetwork:
+        mac_address: 02:42:ac:11:00:03
+    environment:
+      REDIS_ARGS: --requirepass ${REDIS_PASSWORD}
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    labels:
+      - docker-volume-backup.exec-pre-backup=redis-cli save
+    logging: *logging
+
+networks:
+  AppsNetwork:
+    driver: bridge
+
+volumes:
+  traefik-certs:
+  postgres:
+  postgres-backup:
+  redis:
+  victorialogs:
+  ntfy:
+  booktracker:
+  dmarc-reports:
