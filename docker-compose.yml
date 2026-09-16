@@ -70,7 +70,7 @@ services:
     environment:
       REDIS_ARGS: --requirepass ${REDIS_PASSWORD}
       REDISCLI_AUTH: ${REDIS_PASSWORD}
-      TEST_ENV: This is a test
+      TEST_ENV: This is a test - new value
     labels:
       - docker-volume-backup.exec-pre-backup=redis-cli save
     logging: *logging
