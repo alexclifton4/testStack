@@ -75,6 +75,28 @@ services:
       - docker-volume-backup.exec-pre-backup=redis-cli save
     logging: *logging
 
+shopping:
+    container_name: shopping
+    image: '020353163849.dkr.ecr.eu-west-2.amazonaws.com/shopping:latest'
+    restart: always
+    networks:
+      AppsNetwork:
+        mac_address: 02:42:ac:11:01:01
+    environment:
+      EMAIL_FROM: shopping@example.co.uk
+      PORT: 8080
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      SESSION_SECRET: test
+      SSO_APP: abcd
+      SSO_KEY: key
+      NTFY_TOKEN: token
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shopping.rule=Host(`shopping.${STACK_DOMAIN}`)"
+      - "traefik.http.routers.shopping.entrypoints=web"
+      - "traefik.http.routers.shopping.tls.certresolver=resolver"
+    logging: *logging
+
 networks:
   AppsNetwork:
     driver: bridge
